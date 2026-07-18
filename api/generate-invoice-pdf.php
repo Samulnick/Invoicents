@@ -12,8 +12,20 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Check if mPDF is installed via Composer
-require_once '../vendor/autoload.php';
+// Check if mPDF is installed via Composer - correct path from api/ folder
+$autoloadPath = '../vendor/autoload.php';
+
+if (!file_exists($autoloadPath)) {
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode([
+        'success' => false, 
+        'message' => 'mPDF library not found. Please run: composer require mpdf/mpdf'
+    ]);
+    exit();
+}
+
+require_once $autoloadPath;
 
 use Mpdf\Mpdf;
 
