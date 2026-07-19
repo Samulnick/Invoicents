@@ -88,15 +88,28 @@ $unreadMessages = $messages['unread_count'] ?? 0;
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Invoicent - Professional Invoice Management SaaS">
+    <meta name="theme-color" content="#667eea">
     <title>Dashboard - Invoicent</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/dashboard-mobile.css">
 </head>
 <body>
     <div class="dashboard-container">
+        <!-- Hamburger Menu Button -->
+        <button class="hamburger-menu" id="hamburgerMenu" aria-label="Toggle menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- Sidebar Navigation -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-file-invoice-dollar sidebar-logo"></i>
                 <h2>Invoicent</h2>
@@ -165,7 +178,7 @@ $unreadMessages = $messages['unread_count'] ?? 0;
                         <input type="text" id="globalSearch" placeholder="Search invoices, customers...">
                     </div>
 
-                    <button class="notifications-btn">
+                    <button class="notifications-btn" aria-label="Notifications">
                         <i class="fas fa-bell"></i>
                         <span class="notification-badge"><?php echo $unreadMessages; ?></span>
                     </button>
@@ -226,7 +239,7 @@ $unreadMessages = $messages['unread_count'] ?? 0;
                             View All <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body table-responsive">
                         <table class="table">
                             <thead>
                                 <tr>
@@ -282,17 +295,17 @@ $unreadMessages = $messages['unread_count'] ?? 0;
                     <div class="card-header">
                         <h3>Quick Actions</h3>
                     </div>
-                    <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
-                        <a href="invoice-create.php" class="btn btn-primary" style="justify-content: center;">
+                    <div class="card-body btn-group">
+                        <a href="invoice-create.php" class="btn btn-primary">
                             <i class="fas fa-file-export"></i> Create Invoice
                         </a>
-                        <button class="btn btn-success" style="justify-content: center;" onclick="generatePDF()">
+                        <button class="btn btn-success" onclick="generatePDF()">
                             <i class="fas fa-download"></i> Download Invoice
                         </button>
-                        <button class="btn btn-info" style="justify-content: center; background: #17a2b8;" onclick="sendEmail()">
+                        <button class="btn btn-info" style="background: #17a2b8;" onclick="sendEmail()">
                             <i class="fas fa-envelope"></i> Send Email
                         </button>
-                        <a href="customers.php" class="btn btn-secondary" style="justify-content: center;">
+                        <a href="customers.php" class="btn btn-secondary">
                             <i class="fas fa-user-plus"></i> Add Customer
                         </a>
                     </div>
@@ -302,6 +315,38 @@ $unreadMessages = $messages['unread_count'] ?? 0;
     </div>
 
     <script>
+        // Hamburger Menu Toggle
+        const hamburgerMenu = document.getElementById('hamburgerMenu');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function toggleMenu() {
+            hamburgerMenu.classList.toggle('active');
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+        }
+
+        hamburgerMenu.addEventListener('click', toggleMenu);
+        sidebarOverlay.addEventListener('click', toggleMenu);
+
+        // Close sidebar when a link is clicked
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburgerMenu.classList.remove('active');
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        });
+
+        // Close sidebar on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+                toggleMenu();
+            }
+        });
+
         function getStatusColor(status) {
             const colors = {
                 'draft': '#ffc107',
@@ -335,6 +380,16 @@ $unreadMessages = $messages['unread_count'] ?? 0;
                     .then(data => {
                         console.log('Search results:', data);
                     });
+            }
+        });
+
+        // Handle window resize to close mobile menu on larger screens
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                hamburgerMenu.classList.remove('active');
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
             }
         });
     </script>
