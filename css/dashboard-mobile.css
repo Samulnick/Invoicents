@@ -1,0 +1,641 @@
+/* Mobile-First Responsive Dashboard CSS */
+/* This file enhances mobile responsiveness with mobile-first approach */
+
+/* ============================================
+   MOBILE BASE STYLES (320px and up)
+   ============================================ */
+
+/* Hamburger Menu Toggle */
+.hamburger-menu {
+    display: block;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 200;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+}
+
+.hamburger-menu span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background: var(--text-color);
+    margin: 6px 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.hamburger-menu.active span:nth-child(1) {
+    transform: rotate(45deg) translate(10px, 10px);
+}
+
+.hamburger-menu.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-menu.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+}
+
+/* Mobile Sidebar */
+.sidebar {
+    position: fixed;
+    left: -100%;
+    top: 0;
+    width: 100%;
+    max-width: 280px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 150;
+    transition: left 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar.active {
+    left: 0;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 140;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* Mobile Navbar */
+.navbar {
+    padding: 15px;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding-left: 50px;
+}
+
+.navbar-left {
+    width: 100%;
+    flex-direction: column;
+    gap: 0;
+}
+
+.navbar-title {
+    font-size: 18px;
+    margin: 0;
+}
+
+.navbar-right {
+    width: 100%;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.search-box {
+    width: 100%;
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 14px;
+}
+
+.search-box input {
+    font-size: 14px;
+}
+
+/* Mobile Content */
+.main-content {
+    margin-left: 0;
+    margin-top: 0;
+}
+
+.content {
+    padding: 15px;
+    padding-top: 70px;
+}
+
+/* Welcome Card Mobile */
+.welcome-card {
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.welcome-card h1 {
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+.welcome-card p {
+    font-size: 13px;
+}
+
+/* Stats Grid Mobile */
+.stats-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    padding: 20px;
+    text-align: center;
+}
+
+.stat-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+}
+
+.stat-label {
+    font-size: 13px;
+}
+
+/* Cards Mobile */
+.card {
+    margin-bottom: 15px;
+    border-radius: 8px;
+}
+
+.card-header {
+    padding: 15px;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.card-header h3 {
+    font-size: 16px;
+}
+
+.card-body {
+    padding: 15px;
+}
+
+/* Tables Mobile */
+.table {
+    font-size: 13px;
+}
+
+.table th,
+.table td {
+    padding: 10px 5px;
+    font-size: 12px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Buttons Mobile */
+.btn {
+    padding: 10px 15px;
+    font-size: 13px;
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 11px;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+}
+
+.btn-group .btn {
+    flex: 1;
+}
+
+/* Forms Mobile */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Modals Mobile */
+.modal-content {
+    width: 95%;
+    max-width: 100%;
+    border-radius: 12px;
+    max-height: 90vh;
+}
+
+.modal-header {
+    padding: 15px;
+}
+
+.modal-body {
+    padding: 15px;
+}
+
+/* Alerts Mobile */
+.alert {
+    padding: 12px;
+    margin-bottom: 15px;
+    font-size: 13px;
+}
+
+/* User Profile Mobile */
+.user-profile {
+    gap: 8px;
+    font-size: 12px;
+}
+
+.user-avatar {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+}
+
+/* Loading Spinner */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Utility Classes */
+.hide-mobile {
+    display: none;
+}
+
+.show-mobile {
+    display: block;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 15px; }
+.mt-3 { margin-top: 20px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 15px; }
+.mb-3 { margin-bottom: 20px; }
+.p-1 { padding: 8px; }
+.p-2 { padding: 15px; }
+.p-3 { padding: 20px; }
+
+/* ============================================
+   TABLET STYLES (768px and up)
+   ============================================ */
+
+@media (min-width: 768px) {
+    .hamburger-menu {
+        display: none;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        width: 280px;
+        height: 100vh;
+        padding: 20px;
+        z-index: 100;
+    }
+
+    .sidebar-overlay {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 280px;
+    }
+
+    .navbar {
+        flex-direction: row;
+        padding: 15px 30px;
+        padding-left: 30px;
+        gap: 0;
+    }
+
+    .navbar-right {
+        flex-direction: row;
+        gap: 20px;
+        justify-content: flex-end;
+    }
+
+    .search-box {
+        width: 300px;
+        padding: 10px 15px;
+    }
+
+    .content {
+        padding: 30px;
+        padding-top: 30px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+
+    .card-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn {
+        width: auto;
+    }
+
+    .btn-group {
+        flex-direction: row;
+    }
+
+    .hide-mobile {
+        display: block;
+    }
+
+    .show-mobile {
+        display: none;
+    }
+
+    .welcome-card h1 {
+        font-size: 28px;
+    }
+
+    .welcome-card p {
+        font-size: 14px;
+    }
+
+    .table {
+        font-size: 14px;
+    }
+
+    .table th,
+    .table td {
+        padding: 15px;
+        font-size: 14px;
+    }
+}
+
+/* ============================================
+   DESKTOP STYLES (1024px and up)
+   ============================================ */
+
+@media (min-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .content {
+        padding: 40px;
+    }
+
+    .search-box {
+        width: 350px;
+    }
+
+    .card {
+        margin-bottom: 25px;
+    }
+
+    .welcome-card {
+        padding: 40px;
+    }
+}
+
+/* ============================================
+   LARGE DESKTOP (1440px and up)
+   ============================================ */
+
+@media (min-width: 1440px) {
+    .sidebar {
+        width: 300px;
+        padding: 30px;
+    }
+
+    .main-content {
+        margin-left: 300px;
+    }
+
+    .content {
+        max-width: 1400px;
+        padding: 50px;
+        margin: 0 auto;
+    }
+
+    .search-box {
+        width: 400px;
+    }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE (max-height: 600px)
+   ============================================ */
+
+@media (max-height: 600px) and (orientation: landscape) {
+    .sidebar {
+        max-height: 100vh;
+    }
+
+    .content {
+        padding: 10px;
+    }
+
+    .welcome-card {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .card-header {
+        padding: 12px;
+    }
+
+    .card-body {
+        padding: 12px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .stat-card {
+        padding: 15px;
+    }
+
+    .stat-value {
+        font-size: 20px;
+    }
+}
+
+/* ============================================
+   TOUCH DEVICE OPTIMIZATION
+   ============================================ */
+
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        padding: 12px 16px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .btn-sm {
+        min-height: 36px;
+    }
+
+    .sidebar-nav a {
+        padding: 15px;
+        min-height: 44px;
+    }
+
+    .table td {
+        padding: 12px 8px;
+    }
+
+    .notifications-btn,
+    .modal-close {
+        padding: 8px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    button,
+    a[class*="btn"] {
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+    .sidebar,
+    .navbar,
+    .hamburger-menu,
+    .sidebar-overlay,
+    .btn-group,
+    .notifications-btn {
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .content {
+        padding: 0;
+    }
+
+    .card,
+    .stat-card,
+    .welcome-card {
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid var(--border-color);
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --light-color: #1e1e1e;
+        --text-color: #e0e0e0;
+        --border-color: #333;
+    }
+
+    body {
+        background: #121212;
+        color: #e0e0e0;
+    }
+
+    .card,
+    .modal-content {
+        background: #1e1e1e;
+        color: #e0e0e0;
+    }
+
+    .card-header,
+    .card-footer {
+        background: #262626;
+    }
+
+    .table thead {
+        background: #262626;
+    }
+
+    .navbar {
+        background: #1e1e1e;
+        border-bottom: 1px solid #333;
+    }
+
+    .search-box {
+        background: #262626;
+        border-color: #333;
+    }
+}
