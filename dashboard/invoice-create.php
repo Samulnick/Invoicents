@@ -249,11 +249,14 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                             </div>
 
                             <!-- Actions -->
-                            <div style="display: flex; gap: 10px;">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                                 <button type="submit" name="action" value="draft" class="btn btn-secondary">
                                     <i class="fas fa-save"></i> Save Draft
                                 </button>
-                                <button type="button" class="btn btn-success" onclick="generatePDF()">
+                                <button type="button" class="btn btn-info" onclick="previewPDF()">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="downloadPDF()">
                                     <i class="fas fa-download"></i> Download PDF
                                 </button>
                                 <button type="submit" name="action" value="send" class="btn btn-primary">
@@ -354,8 +357,19 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Modal for PDF Preview -->
+    <div id="pdfPreviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; overflow: auto;">
+        <div style="position: relative; background: white; margin: 20px auto; padding: 20px; border-radius: 8px; width: 95%; max-width: 900px; max-height: 90vh; overflow: auto;">
+            <button onclick="closePdfPreview()" style="position: absolute; top: 10px; right: 10px; background: #667eea; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px;">Close</button>
+            <div id="pdfContainer" style="margin-top: 40px;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
+        const { jsPDF } = window.jspdf;
+
         // Add line item
         function addLineItem() {
             const container = document.getElementById('lineItemsContainer');
@@ -490,100 +504,144 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                 document.getElementById('previewNotes').style.display = 'none';
             }
         }
-		
-		
-// Generate PDF using server-side mPDF
-async function generatePDF() {
-    try {
-        // Validate customer
-        const customerName = document.getElementById('customerName').value.trim();
-        if (!customerName) {
-            alert('Please enter a customer name.');
-            return;
-        }
 
-        // Collect line items
-        const lineItems = [];
-        let hasValidItems = false;
+        // Generate PDF using jsPDF with A5 size
+        async function generatePDF() {
+            try {
+                // Validate customer
+                const customerName = document.getElementById('customerName').value.trim();
+                if (!customerName) {
+                    alert('Please enter a customer name.');
+                    return;
+                }
 
-        document.querySelectorAll('.item-row').forEach(row => {
-            const description = row.querySelector('.item-description').value.trim();
-            const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
-            const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
+                // Collect line items
+                const lineItems = [];
+                let hasValidItems = false;
 
-            if (description && quantity > 0) {
-                hasValidItems = true;
+                document.querySelectorAll('.item-row').forEach(row => {
+                    const description = row.querySelector('.item-description').value.trim();
+                    const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                    const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
+
+                    if (description && quantity > 0) {
+                        hasValidItems = true;
+                    }
+
+                    lineItems.push({
+                        description: description,
+                        quantity: quantity,
+                        rate: rate
+                    });
+                });
+
+                if (!hasValidItems) {
+                    alert('Please add at least one valid line item.');
+                    return;
+                }
+
+                return {
+                    invoiceNumber: document.getElementById('invoiceNumber').value,
+                    invoiceDate: document.getElementById('invoiceDate').value,
+                    dueDate: document.getElementById('dueDate').value,
+                    customerName: document.getElementById('customerName').value,
+                    customerEmail: document.getElementById('customerEmail').value,
+                    customerPhone: document.getElementById('customerPhone').value,
+                    customerAddress: document.getElementById('customerAddress').value,
+                    subtotal: parseFloat(document.getElementById('subtotal').value || 0),
+                    taxRate: parseFloat(document.getElementById('taxRate').value || 0),
+                    taxAmount: parseFloat(document.getElementById('taxAmount').value || 0),
+                    discountPercent: parseFloat(document.getElementById('discountPercent').value || 0),
+                    grandTotal: parseFloat(document.getElementById('grandTotal').value || 0),
+                    paymentTerms: document.getElementById('paymentTerms').value,
+                    notes: document.getElementById('notes').value,
+                    lineItems: lineItems
+                };
+            } catch (error) {
+                console.error(error);
+                alert('Error collecting invoice data: ' + error.message);
             }
-
-            lineItems.push({
-                description: description,
-                quantity: quantity,
-                rate: rate
-            });
-        });
-
-        if (!hasValidItems) {
-            alert('Please add at least one valid line item.');
-            return;
         }
 
-        // Build payload expected by generate-invoice-pdf.php
-        const invoiceData = {
-            invoiceNumber: document.getElementById('invoiceNumber').value,
-            invoiceDate: document.getElementById('invoiceDate').value,
-            dueDate: document.getElementById('dueDate').value,
+        // Preview PDF in modal
+        async function previewPDF() {
+            const invoiceData = await generatePDF();
+            if (!invoiceData) return;
 
-            customerName: document.getElementById('customerName').value,
-            customerEmail: document.getElementById('customerEmail').value,
-            customerPhone: document.getElementById('customerPhone').value,
-            customerAddress: document.getElementById('customerAddress').value,
+            try {
+                // Capture the preview element
+                const element = document.getElementById('invoicePreview');
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
 
-            subtotal: parseFloat(document.getElementById('subtotal').textContent.replace(/[₦,]/g, '')) || 0,
-            taxRate: parseFloat(document.getElementById('taxRate').value) || 0,
-            taxAmount: parseFloat(document.getElementById('taxAmount').textContent.replace(/[₦,]/g, '')) || 0,
-            discountPercent: parseFloat(document.getElementById('discountPercent').value) || 0,
-            grandTotal: parseFloat(document.getElementById('grandTotal').textContent.replace(/[₦,]/g, '')) || 0,
+                // Create A5 PDF (148 × 210 mm)
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a5'
+                });
 
-            paymentTerms: document.getElementById('paymentTerms').value,
-            notes: document.getElementById('notes').value,
+                const imgData = canvas.toDataURL('image/png');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            lineItems: lineItems
-        };
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-        // Send to PHP
-        const response = await fetch('generate-invoice-pdf.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(invoiceData)
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(text);
+                // Display in modal
+                const pdfBlob = pdf.output('blob');
+                const pdfUrl = window.URL.createObjectURL(pdfBlob);
+                const pdfContainer = document.getElementById('pdfContainer');
+                pdfContainer.innerHTML = `<embed src="${pdfUrl}" type="application/pdf" style="width: 100%; height: 600px;" />`;
+                
+                document.getElementById('pdfPreviewModal').style.display = 'block';
+            } catch (error) {
+                console.error(error);
+                alert('Error generating preview: ' + error.message);
+            }
         }
 
-        // Download returned PDF
-        const blob = await response.blob();
+        // Download PDF
+        async function downloadPDF() {
+            const invoiceData = await generatePDF();
+            if (!invoiceData) return;
 
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+            try {
+                // Capture the preview element
+                const element = document.getElementById('invoicePreview');
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
 
-        a.href = url;
-        a.download = invoiceData.invoiceNumber + '.pdf';
+                // Create A5 PDF (148 × 210 mm)
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a5'
+                });
 
-        document.body.appendChild(a);
-        a.click();
+                const imgData = canvas.toDataURL('image/png');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        a.remove();
-        window.URL.revokeObjectURL(url);
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-    } catch (error) {
-        console.error(error);
-        alert('Error generating PDF: ' + error.message);
-    }
-}
+                // Download PDF
+                pdf.save(invoiceData.invoiceNumber + '.pdf');
+            } catch (error) {
+                console.error(error);
+                alert('Error downloading PDF: ' + error.message);
+            }
+        }
+
+        // Close PDF preview modal
+        function closePdfPreview() {
+            document.getElementById('pdfPreviewModal').style.display = 'none';
+        }
 
         // Handle form submission
         function handleFormSubmit(event) {
