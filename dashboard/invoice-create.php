@@ -83,7 +83,26 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/dashboard.css">
 	<link rel="stylesheet" href="../css/invoice-create.css">
-    
+    <style>
+        /* A5 Page Styling for PDF */
+        @media print {
+            .invoice-page {
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+        }
+        
+        .invoice-page {
+            width: 148mm;
+            height: 210mm;
+            padding: 10mm;
+            box-sizing: border-box;
+            background: white;
+            margin: 0 auto 20px;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard-container">
@@ -267,90 +286,8 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                     </div>
 
                     <!-- Invoice Preview -->
-                    <div class="invoice-preview" id="invoicePreview">
-                        <div class="invoice-header">
-                            <div style="text-align: center; margin-bottom: 10px;">
-                                <i class="fas fa-file-invoice-dollar" style="font-size: 32px; color: #667eea;"></i>
-                            </div>
-                            <div class="invoice-number" id="previewInvoiceNumber"><?php echo htmlspecialchars($invoiceNumber); ?></div>
-                            <div style="font-size: 12px; color: #999;">Invoice</div>
-                        </div>
-
-                        <div class="invoice-meta">
-                            <div>
-                                <div class="invoice-section-title">Invoice Date</div>
-                                <div id="previewInvoiceDate"><?php echo $today; ?></div>
-                            </div>
-                            <div>
-                                <div class="invoice-section-title">Due Date</div>
-                                <div id="previewDueDate"><?php echo $dueDate; ?></div>
-                            </div>
-                        </div>
-
-                        <div class="invoice-section">
-                            <div class="invoice-section-title">From</div>
-                            <div style="font-size: 13px;">
-                                <strong><?php echo htmlspecialchars($businessName); ?></strong><br>
-                                <?php echo htmlspecialchars($businessEmail); ?><br>
-                                <?php echo htmlspecialchars($businessPhone); ?>
-                            </div>
-                        </div>
-
-                        <div class="invoice-section">
-                            <div class="invoice-section-title">Bill To</div>
-                            <div style="font-size: 13px;">
-                                <strong id="previewCustomerName">-</strong><br>
-                                <span id="previewCustomerEmail">-</span><br>
-                                <span id="previewCustomerPhone">-</span>
-                            </div>
-                        </div>
-
-                        <table class="invoice-table">
-                            <thead>
-                                <tr>
-                                    <th>Description</th>
-                                    <th>Qty</th>
-                                    <th>Rate</th>
-                                    <th>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody id="previewLineItems">
-                                <tr>
-                                    <td colspan="4" style="text-align: center; color: #999;">No items yet</td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        <div class="invoice-totals">
-                            <div class="totals-box">
-                                <div class="total-row">
-                                    <span>Subtotal</span>
-                                    <span id="previewSubtotal">₦0.00</span>
-                                </div>
-                                <div class="total-row">
-                                    <span>Tax (<span id="previewTaxRate">0</span>%)</span>
-                                    <span id="previewTaxAmount">₦0.00</span>
-                                </div>
-                                <div class="total-row">
-                                    <span>Discount (<span id="previewDiscountPercent">0</span>%)</span>
-                                    <span id="previewDiscountAmount">-₦0.00</span>
-                                </div>
-                                <div class="total-row grand-total">
-                                    <span>Grand Total</span>
-                                    <span id="previewGrandTotal">₦0.00</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="invoice-section" id="previewPaymentTerms" style="display: none;">
-                            <div class="invoice-section-title">Payment Terms</div>
-                            <div style="font-size: 12px;" id="previewPaymentTermsText"></div>
-                        </div>
-
-                        <div class="invoice-section" id="previewNotes" style="display: none;">
-                            <div class="invoice-section-title">Notes</div>
-                            <div style="font-size: 12px;" id="previewNotesText"></div>
-                        </div>
+                    <div id="invoicePreviewContainer" style="display: none;">
+                        <div id="invoicePages"></div>
                     </div>
                 </div>
             </div>
@@ -369,6 +306,10 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         const { jsPDF } = window.jspdf;
+        const A5_WIDTH = 148;
+        const A5_HEIGHT = 210;
+        const PAGE_MARGIN = 10;
+        const USABLE_HEIGHT = A5_HEIGHT - (PAGE_MARGIN * 2);
 
         // Add line item
         function addLineItem() {
@@ -441,78 +382,126 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
             updatePreview();
         }
 
-        // Update preview
-        function updatePreview() {
-            document.getElementById('previewInvoiceNumber').textContent = document.getElementById('invoiceNumber').value || 'INV-001';
-            document.getElementById('previewInvoiceDate').textContent = document.getElementById('invoiceDate').value || '-';
-            document.getElementById('previewDueDate').textContent = document.getElementById('dueDate').value || '-';
-            document.getElementById('previewCustomerName').textContent = document.getElementById('customerName').value || '-';
-            document.getElementById('previewCustomerEmail').textContent = document.getElementById('customerEmail').value || '-';
-            document.getElementById('previewCustomerPhone').textContent = document.getElementById('customerPhone').value || '-';
+        // Generate HTML invoice content
+        function generateInvoiceHTML(includeTerms = false) {
+            const html = `
+                <div style="font-family: Arial, sans-serif; font-size: 11px; color: #333; padding: 5mm;">
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <div style="font-size: 18px; font-weight: bold; color: #667eea;">INVOICE</div>
+                        <div style="font-size: 14px; font-weight: bold;">${document.getElementById('invoiceNumber').value || 'INV-001'}</div>
+                    </div>
 
-            // Update line items
-            let lineItemsHtml = '';
-            let items = document.querySelectorAll('.item-row');
-            if (items.length > 0 && items[0].querySelector('.item-description').value) {
-                items.forEach(row => {
-                    const desc = row.querySelector('.item-description').value;
-                    const qty = row.querySelector('.item-quantity').value;
-                    const rate = row.querySelector('.item-rate').value;
-                    const amount = row.querySelector('.item-amount').value;
-                    
-                    if (desc && qty && rate) {
-                        lineItemsHtml += `
-                            <tr>
-                                <td>${desc}</td>
-                                <td>${qty}</td>
-                                <td>₦${parseFloat(rate).toFixed(2)}</td>
-                                <td>₦${parseFloat(amount).toFixed(2)}</td>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; font-size: 10px;">
+                        <div>
+                            <div style="font-weight: bold; font-size: 11px;">Invoice Date</div>
+                            <div>${document.getElementById('invoiceDate').value || '-'}</div>
+                        </div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 11px;">Due Date</div>
+                            <div>${document.getElementById('dueDate').value || '-'}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; font-size: 10px;">
+                        <div>
+                            <div style="font-weight: bold; margin-bottom: 3px;">From:</div>
+                            <div style="font-weight: bold;"><?php echo htmlspecialchars($businessName); ?></div>
+                            <div><?php echo htmlspecialchars($businessEmail); ?></div>
+                            <div><?php echo htmlspecialchars($businessPhone); ?></div>
+                        </div>
+                        <div>
+                            <div style="font-weight: bold; margin-bottom: 3px;">Bill To:</div>
+                            <div style="font-weight: bold;">${document.getElementById('customerName').value || '-'}</div>
+                            <div>${document.getElementById('customerEmail').value || '-'}</div>
+                            <div>${document.getElementById('customerPhone').value || '-'}</div>
+                            <div style="font-size: 9px; margin-top: 2px;">${document.getElementById('customerAddress').value || ''}</div>
+                        </div>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px;">
+                        <thead>
+                            <tr style="background-color: #f5f5f5; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd;">
+                                <th style="text-align: left; padding: 3px; font-weight: bold;">Description</th>
+                                <th style="text-align: center; padding: 3px; font-weight: bold; width: 40px;">Qty</th>
+                                <th style="text-align: right; padding: 3px; font-weight: bold; width: 50px;">Rate</th>
+                                <th style="text-align: right; padding: 3px; font-weight: bold; width: 50px;">Amount</th>
                             </tr>
-                        `;
-                    }
-                });
-            }
+                        </thead>
+                        <tbody id="invoiceLineItemsHTML">
+                            ${(() => {
+                                let html = '';
+                                document.querySelectorAll('.item-row').forEach(row => {
+                                    const desc = row.querySelector('.item-description').value;
+                                    const qty = row.querySelector('.item-quantity').value;
+                                    const rate = row.querySelector('.item-rate').value;
+                                    const amount = row.querySelector('.item-amount').value;
+                                    
+                                    if (desc && qty && rate) {
+                                        html += `
+                                            <tr style="border-bottom: 1px solid #eee;">
+                                                <td style="padding: 3px;">${desc}</td>
+                                                <td style="text-align: center; padding: 3px;">${qty}</td>
+                                                <td style="text-align: right; padding: 3px;">₦${parseFloat(rate).toFixed(2)}</td>
+                                                <td style="text-align: right; padding: 3px;">₦${parseFloat(amount).toFixed(2)}</td>
+                                            </tr>
+                                        `;
+                                    }
+                                });
+                                return html || '<tr><td colspan="4" style="text-align: center; padding: 5px; color: #999;">No items</td></tr>';
+                            })()}
+                        </tbody>
+                    </table>
 
-            if (lineItemsHtml) {
-                document.getElementById('previewLineItems').innerHTML = lineItemsHtml;
-            } else {
-                document.getElementById('previewLineItems').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No items yet</td></tr>';
-            }
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                        <div></div>
+                        <div style="font-size: 10px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; border-top: 1px solid #ddd; padding-top: 3px;">
+                                <div>Subtotal:</div>
+                                <div style="text-align: right;">₦${parseFloat(document.getElementById('subtotal').value || 0).toFixed(2)}</div>
+                                <div>Tax (${document.getElementById('taxRate').value || '0'}%):</div>
+                                <div style="text-align: right;">₦${parseFloat(document.getElementById('taxAmount').value || 0).toFixed(2)}</div>
+                                <div>Discount (${document.getElementById('discountPercent').value || '0'}%):</div>
+                                <div style="text-align: right;">-₦${(((parseFloat(document.getElementById('subtotal').value || 0) * parseFloat(document.getElementById('discountPercent').value || 0)) / 100).toFixed(2))}</div>
+                                <div style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 3px;">Grand Total:</div>
+                                <div style="text-align: right; font-weight: bold; border-top: 1px solid #ddd; padding-top: 3px;">₦${parseFloat(document.getElementById('grandTotal').value || 0).toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
 
-            // Update totals
-            document.getElementById('previewSubtotal').textContent = '₦' + (document.getElementById('subtotal').value || '0');
-            document.getElementById('previewTaxRate').textContent = document.getElementById('taxRate').value || '0';
-            document.getElementById('previewTaxAmount').textContent = '₦' + (document.getElementById('taxAmount').value || '0');
-            document.getElementById('previewDiscountPercent').textContent = document.getElementById('discountPercent').value || '0';
-            document.getElementById('previewDiscountAmount').textContent = '-₦' + (((parseFloat(document.getElementById('subtotal').value || 0) * parseFloat(document.getElementById('discountPercent').value || 0)) / 100).toFixed(2));
-            document.getElementById('previewGrandTotal').textContent = '₦' + (document.getElementById('grandTotal').value || '0');
-
-            // Update notes and terms
-            const paymentTerms = document.getElementById('paymentTerms').value;
-            if (paymentTerms) {
-                document.getElementById('previewPaymentTerms').style.display = 'block';
-                document.getElementById('previewPaymentTermsText').textContent = paymentTerms;
-            } else {
-                document.getElementById('previewPaymentTerms').style.display = 'none';
-            }
-
-            const notes = document.getElementById('notes').value;
-            if (notes) {
-                document.getElementById('previewNotes').style.display = 'block';
-                document.getElementById('previewNotesText').textContent = notes;
-            } else {
-                document.getElementById('previewNotes').style.display = 'none';
-            }
+                    ${includeTerms ? `
+                        <div style="border-top: 1px solid #ddd; padding-top: 5px; font-size: 9px;">
+                            ${document.getElementById('paymentTerms').value ? `
+                                <div style="margin-bottom: 5px;">
+                                    <div style="font-weight: bold;">Payment Terms:</div>
+                                    <div>${document.getElementById('paymentTerms').value}</div>
+                                </div>
+                            ` : ''}
+                            ${document.getElementById('notes').value ? `
+                                <div>
+                                    <div style="font-weight: bold;">Notes:</div>
+                                    <div>${document.getElementById('notes').value}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            return html;
         }
 
-        // Generate PDF using jsPDF with A5 size
+        // Update preview
+        function updatePreview() {
+            // Real-time preview is optional, you can implement this if needed
+        }
+
+        // Generate PDF with multi-page support
         async function generatePDF() {
             try {
                 // Validate customer
                 const customerName = document.getElementById('customerName').value.trim();
                 if (!customerName) {
                     alert('Please enter a customer name.');
-                    return;
+                    return null;
                 }
 
                 // Collect line items
@@ -537,7 +526,7 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
 
                 if (!hasValidItems) {
                     alert('Please add at least one valid line item.');
-                    return;
+                    return null;
                 }
 
                 return {
@@ -560,35 +549,117 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
             } catch (error) {
                 console.error(error);
                 alert('Error collecting invoice data: ' + error.message);
+                return null;
             }
         }
 
-        // Preview PDF in modal
-        async function previewPDF() {
+        // Create multi-page PDF
+        async function createMultiPagePDF() {
             const invoiceData = await generatePDF();
-            if (!invoiceData) return;
+            if (!invoiceData) return null;
 
             try {
-                // Capture the preview element
-                const element = document.getElementById('invoicePreview');
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff'
-                });
-
-                // Create A5 PDF (148 × 210 mm)
                 const pdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
                     format: 'a5'
                 });
 
-                const imgData = canvas.toDataURL('image/png');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
+                let currentPage = 1;
+                let yPosition = PAGE_MARGIN;
+                const maxY = A5_HEIGHT - PAGE_MARGIN;
 
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                // Create temporary div for first page content
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = generateInvoiceHTML(false);
+                tempDiv.style.width = (A5_WIDTH - PAGE_MARGIN * 2) + 'mm';
+                tempDiv.style.display = 'none';
+                document.body.appendChild(tempDiv);
+
+                // Generate first page
+                const canvas1 = await html2canvas(tempDiv, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+
+                const imgHeight1 = (canvas1.height * A5_WIDTH) / canvas1.width;
+                
+                if (imgHeight1 > USABLE_HEIGHT) {
+                    // Content exceeds page, needs continuation
+                    const imgData1 = canvas1.toDataURL('image/png');
+                    const scaledHeight = (A5_WIDTH - PAGE_MARGIN * 2);
+                    pdf.addImage(imgData1, 'PNG', PAGE_MARGIN, PAGE_MARGIN, scaledHeight, imgHeight1);
+                    
+                    // Add second page for payment terms and notes
+                    pdf.addPage('a5', 'portrait');
+                    
+                    const tempDiv2 = document.createElement('div');
+                    tempDiv2.innerHTML = `
+                        <div style="font-family: Arial, sans-serif; font-size: 11px; color: #333; padding: 5mm;">
+                            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #667eea;">Invoice Settings & Terms</div>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <div style="font-weight: bold; margin-bottom: 5px;">Invoice Number:</div>
+                                <div>${invoiceData.invoiceNumber}</div>
+                            </div>
+
+                            ${invoiceData.paymentTerms ? `
+                                <div style="margin-bottom: 10px;">
+                                    <div style="font-weight: bold; margin-bottom: 5px;">Payment Terms:</div>
+                                    <div style="font-size: 10px; white-space: pre-wrap;">${invoiceData.paymentTerms}</div>
+                                </div>
+                            ` : ''}
+
+                            ${invoiceData.notes ? `
+                                <div style="margin-bottom: 10px;">
+                                    <div style="font-weight: bold; margin-bottom: 5px;">Additional Notes:</div>
+                                    <div style="font-size: 10px; white-space: pre-wrap;">${invoiceData.notes}</div>
+                                </div>
+                            ` : ''}
+
+                            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #666;">
+                                <div>Generated on: ${new Date().toLocaleDateString()}</div>
+                                <div>Business: <?php echo htmlspecialchars($businessName); ?></div>
+                            </div>
+                        </div>
+                    `;
+                    tempDiv2.style.width = (A5_WIDTH - PAGE_MARGIN * 2) + 'mm';
+                    tempDiv2.style.display = 'none';
+                    document.body.appendChild(tempDiv2);
+
+                    const canvas2 = await html2canvas(tempDiv2, {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#ffffff'
+                    });
+
+                    const imgData2 = canvas2.toDataURL('image/png');
+                    const scaledHeight2 = (A5_WIDTH - PAGE_MARGIN * 2);
+                    pdf.addImage(imgData2, 'PNG', PAGE_MARGIN, PAGE_MARGIN, scaledHeight2, scaledHeight2);
+
+                    document.body.removeChild(tempDiv2);
+                } else {
+                    // Single page, add to PDF
+                    const imgData = canvas1.toDataURL('image/png');
+                    const scaledHeight = (A5_WIDTH - PAGE_MARGIN * 2);
+                    pdf.addImage(imgData, 'PNG', PAGE_MARGIN, PAGE_MARGIN, scaledHeight, imgHeight1);
+                }
+
+                document.body.removeChild(tempDiv);
+                return pdf;
+            } catch (error) {
+                console.error(error);
+                alert('Error creating PDF: ' + error.message);
+                return null;
+            }
+        }
+
+        // Preview PDF in modal
+        async function previewPDF() {
+            try {
+                const pdf = await createMultiPagePDF();
+                if (!pdf) return;
 
                 // Display in modal
                 const pdfBlob = pdf.output('blob');
@@ -605,32 +676,13 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
 
         // Download PDF
         async function downloadPDF() {
-            const invoiceData = await generatePDF();
-            if (!invoiceData) return;
-
             try {
-                // Capture the preview element
-                const element = document.getElementById('invoicePreview');
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff'
-                });
+                const invoiceData = await generatePDF();
+                if (!invoiceData) return;
 
-                // Create A5 PDF (148 × 210 mm)
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a5'
-                });
+                const pdf = await createMultiPagePDF();
+                if (!pdf) return;
 
-                const imgData = canvas.toDataURL('image/png');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-                // Download PDF
                 pdf.save(invoiceData.invoiceNumber + '.pdf');
             } catch (error) {
                 console.error(error);
