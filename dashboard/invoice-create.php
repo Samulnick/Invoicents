@@ -22,6 +22,24 @@ $userResult = $stmt->get_result();
 $user = $userResult->fetch_assoc();
 $stmt->close();
 
+// Get user settings
+$settingsQuery = "SELECT 
+    currency, invoice_prefix, default_tax_rate, payment_terms, invoice_notes
+FROM users WHERE id = ?";
+$stmt = $db->prepare($settingsQuery);
+$stmt->bind_param('i', $user_id);
+$stmt->execute();
+$settingsResult = $stmt->get_result();
+$settings = $settingsResult->fetch_assoc();
+$stmt->close();
+
+// Set defaults for missing settings
+$currency = $settings['currency'] ?? 'NGN';
+$invoicePrefix = $settings['invoice_prefix'] ?? 'INV';
+$defaultTaxRate = $settings['default_tax_rate'] ?? '0';
+$defaultPaymentTerms = $settings['payment_terms'] ?? 'Payment due within 30 days';
+$defaultInvoiceNotes = $settings['invoice_notes'] ?? '';
+
 // Get next invoice number
 $invoiceQuery = "SELECT MAX(CAST(SUBSTRING(invoice_number, 5) AS UNSIGNED)) as max_number FROM invoices WHERE user_id = ?";
 $stmt = $db->prepare($invoiceQuery);
@@ -31,7 +49,7 @@ $invoiceResult = $stmt->get_result();
 $invoiceRow = $invoiceResult->fetch_assoc();
 $stmt->close();
 $nextNumber = ($invoiceRow['max_number'] ?? 0) + 1;
-$invoiceNumber = 'INV-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+$invoiceNumber = $invoicePrefix . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
 // Get customer list for autocomplete
 $customersQuery = "SELECT id, name, email, phone, address FROM customers WHERE user_id = ? ORDER BY name";
@@ -196,7 +214,7 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                                     </div>
                                     <div class="form-group">
                                         <label>Tax Rate (%)</label>
-                                        <input type="number" id="taxRate" min="0" max="100" step="0.01" value="0" onchange="calculateTotals()">
+                                        <input type="number" id="taxRate" min="0" max="100" step="0.01" value="<?php echo htmlspecialchars($defaultTaxRate); ?>" onchange="calculateTotals()">
                                     </div>
                                 </div>
                                 <div class="form-row">
@@ -222,11 +240,11 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                                 <h4><i class="fas fa-sticky-note"></i> Notes & Terms</h4>
                                 <div class="form-group">
                                     <label>Payment Terms</label>
-                                    <textarea id="paymentTerms" placeholder="e.g., Payment due within 30 days"></textarea>
+                                    <textarea id="paymentTerms" placeholder="e.g., Payment due within 30 days"><?php echo htmlspecialchars($defaultPaymentTerms); ?></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label>Additional Notes</label>
-                                    <textarea id="notes" placeholder="Any additional notes for the customer"></textarea>
+                                    <textarea id="notes" placeholder="Any additional notes for the customer"><?php echo htmlspecialchars($defaultInvoiceNotes); ?></textarea>
                                 </div>
                             </div>
 
