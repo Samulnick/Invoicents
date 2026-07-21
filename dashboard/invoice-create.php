@@ -84,23 +84,137 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
     <link rel="stylesheet" href="../css/dashboard.css">
 	<link rel="stylesheet" href="../css/invoice-create.css">
     <style>
-        /* A5 Page Styling for PDF */
-        @media print {
-            .invoice-page {
-                page-break-after: always;
-                page-break-inside: avoid;
+        .invoice-builder {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .invoice-form {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .invoice-preview-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #f0f0f0;
+        }
+
+        .preview-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #667eea;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .invoice-preview-content {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+            background: white;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            min-height: 500px;
+        }
+
+        .invoice-header-preview {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .invoice-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .invoice-number {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .invoice-meta-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 10px;
+        }
+
+        .invoice-section-preview {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 11px;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 10px;
+        }
+
+        .preview-table thead {
+            background-color: #f5f5f5;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .preview-table th {
+            text-align: left;
+            padding: 5px;
+            font-weight: bold;
+        }
+
+        .preview-table td {
+            padding: 4px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .totals-preview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 10px;
+        }
+
+        .totals-right {
+            text-align: right;
+        }
+
+        @media (max-width: 1200px) {
+            .invoice-builder {
+                grid-template-columns: 1fr;
             }
         }
-        
-        .invoice-page {
-            width: 148mm;
-            height: 210mm;
-            padding: 10mm;
-            box-sizing: border-box;
-            background: white;
-            margin: 0 auto 20px;
-            display: flex;
-            flex-direction: column;
+
+        @media print {
+            .invoice-form, .btn {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -159,13 +273,13 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                                     </div>
                                     <div class="form-group">
                                         <label>Invoice Date</label>
-                                        <input type="date" id="invoiceDate" value="<?php echo $today; ?>" required>
+                                        <input type="date" id="invoiceDate" value="<?php echo $today; ?>" required onchange="updatePreview()">
                                     </div>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>Due Date</label>
-                                        <input type="date" id="dueDate" value="<?php echo $dueDate; ?>" required>
+                                        <input type="date" id="dueDate" value="<?php echo $dueDate; ?>" required onchange="updatePreview()">
                                     </div>
                                     <div class="form-group">
                                         <label>Status</label>
@@ -183,7 +297,7 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                                 <h4><i class="fas fa-user"></i> Bill To (Customer)</h4>
                                 <div class="form-group">
                                     <label>Customer Name</label>
-                                    <input type="text" id="customerName" placeholder="Customer or Business Name" list="customerList" required>
+                                    <input type="text" id="customerName" placeholder="Customer or Business Name" list="customerList" required onchange="updatePreview()">
                                     <datalist id="customerList">
                                         <?php foreach ($customers as $customer): ?>
                                             <option value="<?php echo htmlspecialchars($customer['name']); ?>" data-id="<?php echo $customer['id']; ?>">
@@ -192,15 +306,15 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                                 </div>
                                 <div class="form-group">
                                     <label>Email</label>
-                                    <input type="email" id="customerEmail" placeholder="customer@example.com" required>
+                                    <input type="email" id="customerEmail" placeholder="customer@example.com" required onchange="updatePreview()">
                                 </div>
                                 <div class="form-group">
                                     <label>Address</label>
-                                    <textarea id="customerAddress" placeholder="Full address"></textarea>
+                                    <textarea id="customerAddress" placeholder="Full address" onchange="updatePreview()"></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label>Phone</label>
-                                    <input type="tel" id="customerPhone" placeholder="+234...">
+                                    <input type="tel" id="customerPhone" placeholder="+234..." onchange="updatePreview()">
                                 </div>
                             </div>
 
@@ -259,11 +373,11 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                                 <h4><i class="fas fa-sticky-note"></i> Notes & Terms</h4>
                                 <div class="form-group">
                                     <label>Payment Terms</label>
-                                    <textarea id="paymentTerms" placeholder="e.g., Payment due within 30 days"><?php echo htmlspecialchars($defaultPaymentTerms); ?></textarea>
+                                    <textarea id="paymentTerms" placeholder="e.g., Payment due within 30 days" onchange="updatePreview()"><?php echo htmlspecialchars($defaultPaymentTerms); ?></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label>Additional Notes</label>
-                                    <textarea id="notes" placeholder="Any additional notes for the customer"><?php echo htmlspecialchars($defaultInvoiceNotes); ?></textarea>
+                                    <textarea id="notes" placeholder="Any additional notes for the customer" onchange="updatePreview()"><?php echo htmlspecialchars($defaultInvoiceNotes); ?></textarea>
                                 </div>
                             </div>
 
@@ -273,7 +387,7 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                                     <i class="fas fa-save"></i> Save Draft
                                 </button>
                                 <button type="button" class="btn btn-info" onclick="previewPDF()">
-                                    <i class="fas fa-eye"></i> Preview
+                                    <i class="fas fa-eye"></i> Preview PDF
                                 </button>
                                 <button type="button" class="btn btn-success" onclick="downloadPDF()">
                                     <i class="fas fa-download"></i> Download PDF
@@ -286,8 +400,83 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                     </div>
 
                     <!-- Invoice Preview -->
-                    <div id="invoicePreviewContainer" style="display: none;">
-                        <div id="invoicePages"></div>
+                    <div class="invoice-preview-section">
+                        <span class="preview-label">Invoice Preview</span>
+                        <div class="invoice-preview-content" id="invoicePreviewContent">
+                            <div class="invoice-header-preview">
+                                <div class="invoice-title">INVOICE</div>
+                                <div class="invoice-number" id="previewInvoiceNumber"><?php echo htmlspecialchars($invoiceNumber); ?></div>
+                            </div>
+
+                            <div class="invoice-meta-row">
+                                <div>
+                                    <div class="section-title">Invoice Date</div>
+                                    <div id="previewInvoiceDate"><?php echo $today; ?></div>
+                                </div>
+                                <div>
+                                    <div class="section-title">Due Date</div>
+                                    <div id="previewDueDate"><?php echo $dueDate; ?></div>
+                                </div>
+                            </div>
+
+                            <div class="invoice-section-preview">
+                                <div class="section-title">From</div>
+                                <div style="font-size: 10px;">
+                                    <strong><?php echo htmlspecialchars($businessName); ?></strong><br>
+                                    <?php echo htmlspecialchars($businessEmail); ?><br>
+                                    <?php echo htmlspecialchars($businessPhone); ?>
+                                </div>
+                            </div>
+
+                            <div class="invoice-section-preview">
+                                <div class="section-title">Bill To</div>
+                                <div style="font-size: 10px;">
+                                    <strong id="previewCustomerName">-</strong><br>
+                                    <span id="previewCustomerEmail">-</span><br>
+                                    <span id="previewCustomerPhone">-</span><br>
+                                    <span id="previewCustomerAddress" style="font-size: 9px;">-</span>
+                                </div>
+                            </div>
+
+                            <table class="preview-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th style="text-align: center; width: 40px;">Qty</th>
+                                        <th style="text-align: right; width: 50px;">Rate</th>
+                                        <th style="text-align: right; width: 50px;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewLineItems">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: #999; padding: 10px;">No items yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="invoice-section-preview">
+                                <div class="totals-preview">
+                                    <div>Subtotal:</div>
+                                    <div class="totals-right" id="previewSubtotal">₦0.00</div>
+                                    <div>Tax (<span id="previewTaxRate">0</span>%):</div>
+                                    <div class="totals-right" id="previewTaxAmount">₦0.00</div>
+                                    <div>Discount (<span id="previewDiscountPercent">0</span>%):</div>
+                                    <div class="totals-right" id="previewDiscountAmount">-₦0.00</div>
+                                    <div style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 5px;">Grand Total:</div>
+                                    <div class="totals-right" style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 5px;" id="previewGrandTotal">₦0.00</div>
+                                </div>
+                            </div>
+
+                            <div class="invoice-section-preview" id="previewPaymentTerms" style="display: none;">
+                                <div class="section-title">Payment Terms</div>
+                                <div style="font-size: 9px;" id="previewPaymentTermsText"></div>
+                            </div>
+
+                            <div class="invoice-section-preview" id="previewNotes" style="display: none;">
+                                <div class="section-title">Notes</div>
+                                <div style="font-size: 9px;" id="previewNotesText"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -327,12 +516,14 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
             `;
             container.appendChild(row);
             attachItemListeners(row);
+            updatePreview();
         }
 
         // Remove line item
         function removeItem(btn) {
             btn.closest('.item-row').remove();
             calculateTotals();
+            updatePreview();
         }
 
         // Attach event listeners to line items
@@ -382,116 +573,70 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
             updatePreview();
         }
 
-        // Generate HTML invoice content
-        function generateInvoiceHTML(includeTerms = false) {
-            const html = `
-                <div style="font-family: Arial, sans-serif; font-size: 11px; color: #333; padding: 5mm;">
-                    <div style="text-align: center; margin-bottom: 10px;">
-                        <div style="font-size: 18px; font-weight: bold; color: #667eea;">INVOICE</div>
-                        <div style="font-size: 14px; font-weight: bold;">${document.getElementById('invoiceNumber').value || 'INV-001'}</div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; font-size: 10px;">
-                        <div>
-                            <div style="font-weight: bold; font-size: 11px;">Invoice Date</div>
-                            <div>${document.getElementById('invoiceDate').value || '-'}</div>
-                        </div>
-                        <div>
-                            <div style="font-weight: bold; font-size: 11px;">Due Date</div>
-                            <div>${document.getElementById('dueDate').value || '-'}</div>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; font-size: 10px;">
-                        <div>
-                            <div style="font-weight: bold; margin-bottom: 3px;">From:</div>
-                            <div style="font-weight: bold;"><?php echo htmlspecialchars($businessName); ?></div>
-                            <div><?php echo htmlspecialchars($businessEmail); ?></div>
-                            <div><?php echo htmlspecialchars($businessPhone); ?></div>
-                        </div>
-                        <div>
-                            <div style="font-weight: bold; margin-bottom: 3px;">Bill To:</div>
-                            <div style="font-weight: bold;">${document.getElementById('customerName').value || '-'}</div>
-                            <div>${document.getElementById('customerEmail').value || '-'}</div>
-                            <div>${document.getElementById('customerPhone').value || '-'}</div>
-                            <div style="font-size: 9px; margin-top: 2px;">${document.getElementById('customerAddress').value || ''}</div>
-                        </div>
-                    </div>
-
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px;">
-                        <thead>
-                            <tr style="background-color: #f5f5f5; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd;">
-                                <th style="text-align: left; padding: 3px; font-weight: bold;">Description</th>
-                                <th style="text-align: center; padding: 3px; font-weight: bold; width: 40px;">Qty</th>
-                                <th style="text-align: right; padding: 3px; font-weight: bold; width: 50px;">Rate</th>
-                                <th style="text-align: right; padding: 3px; font-weight: bold; width: 50px;">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody id="invoiceLineItemsHTML">
-                            ${(() => {
-                                let html = '';
-                                document.querySelectorAll('.item-row').forEach(row => {
-                                    const desc = row.querySelector('.item-description').value;
-                                    const qty = row.querySelector('.item-quantity').value;
-                                    const rate = row.querySelector('.item-rate').value;
-                                    const amount = row.querySelector('.item-amount').value;
-                                    
-                                    if (desc && qty && rate) {
-                                        html += `
-                                            <tr style="border-bottom: 1px solid #eee;">
-                                                <td style="padding: 3px;">${desc}</td>
-                                                <td style="text-align: center; padding: 3px;">${qty}</td>
-                                                <td style="text-align: right; padding: 3px;">₦${parseFloat(rate).toFixed(2)}</td>
-                                                <td style="text-align: right; padding: 3px;">₦${parseFloat(amount).toFixed(2)}</td>
-                                            </tr>
-                                        `;
-                                    }
-                                });
-                                return html || '<tr><td colspan="4" style="text-align: center; padding: 5px; color: #999;">No items</td></tr>';
-                            })()}
-                        </tbody>
-                    </table>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
-                        <div></div>
-                        <div style="font-size: 10px;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; border-top: 1px solid #ddd; padding-top: 3px;">
-                                <div>Subtotal:</div>
-                                <div style="text-align: right;">₦${parseFloat(document.getElementById('subtotal').value || 0).toFixed(2)}</div>
-                                <div>Tax (${document.getElementById('taxRate').value || '0'}%):</div>
-                                <div style="text-align: right;">₦${parseFloat(document.getElementById('taxAmount').value || 0).toFixed(2)}</div>
-                                <div>Discount (${document.getElementById('discountPercent').value || '0'}%):</div>
-                                <div style="text-align: right;">-₦${(((parseFloat(document.getElementById('subtotal').value || 0) * parseFloat(document.getElementById('discountPercent').value || 0)) / 100).toFixed(2))}</div>
-                                <div style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 3px;">Grand Total:</div>
-                                <div style="text-align: right; font-weight: bold; border-top: 1px solid #ddd; padding-top: 3px;">₦${parseFloat(document.getElementById('grandTotal').value || 0).toFixed(2)}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    ${includeTerms ? `
-                        <div style="border-top: 1px solid #ddd; padding-top: 5px; font-size: 9px;">
-                            ${document.getElementById('paymentTerms').value ? `
-                                <div style="margin-bottom: 5px;">
-                                    <div style="font-weight: bold;">Payment Terms:</div>
-                                    <div>${document.getElementById('paymentTerms').value}</div>
-                                </div>
-                            ` : ''}
-                            ${document.getElementById('notes').value ? `
-                                <div>
-                                    <div style="font-weight: bold;">Notes:</div>
-                                    <div>${document.getElementById('notes').value}</div>
-                                </div>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-            return html;
-        }
-
         // Update preview
         function updatePreview() {
-            // Real-time preview is optional, you can implement this if needed
+            document.getElementById('previewInvoiceNumber').textContent = document.getElementById('invoiceNumber').value || 'INV-001';
+            document.getElementById('previewInvoiceDate').textContent = document.getElementById('invoiceDate').value || '-';
+            document.getElementById('previewDueDate').textContent = document.getElementById('dueDate').value || '-';
+            document.getElementById('previewCustomerName').textContent = document.getElementById('customerName').value || '-';
+            document.getElementById('previewCustomerEmail').textContent = document.getElementById('customerEmail').value || '-';
+            document.getElementById('previewCustomerPhone').textContent = document.getElementById('customerPhone').value || '-';
+            document.getElementById('previewCustomerAddress').textContent = document.getElementById('customerAddress').value || '-';
+
+            // Update line items
+            let lineItemsHtml = '';
+            let items = document.querySelectorAll('.item-row');
+            let hasItems = false;
+            
+            items.forEach(row => {
+                const desc = row.querySelector('.item-description').value;
+                const qty = row.querySelector('.item-quantity').value;
+                const rate = row.querySelector('.item-rate').value;
+                const amount = row.querySelector('.item-amount').value;
+                
+                if (desc && qty && rate) {
+                    hasItems = true;
+                    lineItemsHtml += `
+                        <tr>
+                            <td>${desc}</td>
+                            <td style="text-align: center;">${qty}</td>
+                            <td style="text-align: right;">₦${parseFloat(rate).toFixed(2)}</td>
+                            <td style="text-align: right;">₦${parseFloat(amount).toFixed(2)}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if (hasItems) {
+                document.getElementById('previewLineItems').innerHTML = lineItemsHtml;
+            } else {
+                document.getElementById('previewLineItems').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999; padding: 10px;">No items yet</td></tr>';
+            }
+
+            // Update totals
+            document.getElementById('previewSubtotal').textContent = '₦' + (document.getElementById('subtotal').value || '0.00');
+            document.getElementById('previewTaxRate').textContent = document.getElementById('taxRate').value || '0';
+            document.getElementById('previewTaxAmount').textContent = '₦' + (document.getElementById('taxAmount').value || '0.00');
+            document.getElementById('previewDiscountPercent').textContent = document.getElementById('discountPercent').value || '0';
+            document.getElementById('previewDiscountAmount').textContent = '-₦' + (((parseFloat(document.getElementById('subtotal').value || 0) * parseFloat(document.getElementById('discountPercent').value || 0)) / 100).toFixed(2));
+            document.getElementById('previewGrandTotal').textContent = '₦' + (document.getElementById('grandTotal').value || '0.00');
+
+            // Update notes and terms
+            const paymentTerms = document.getElementById('paymentTerms').value;
+            if (paymentTerms) {
+                document.getElementById('previewPaymentTerms').style.display = 'block';
+                document.getElementById('previewPaymentTermsText').textContent = paymentTerms;
+            } else {
+                document.getElementById('previewPaymentTerms').style.display = 'none';
+            }
+
+            const notes = document.getElementById('notes').value;
+            if (notes) {
+                document.getElementById('previewNotes').style.display = 'block';
+                document.getElementById('previewNotesText').textContent = notes;
+            } else {
+                document.getElementById('previewNotes').style.display = 'none';
+            }
         }
 
         // Generate PDF with multi-page support
@@ -565,14 +710,83 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                     format: 'a5'
                 });
 
-                let currentPage = 1;
-                let yPosition = PAGE_MARGIN;
-                const maxY = A5_HEIGHT - PAGE_MARGIN;
-
-                // Create temporary div for first page content
+                // Create first page content div
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = generateInvoiceHTML(false);
                 tempDiv.style.width = (A5_WIDTH - PAGE_MARGIN * 2) + 'mm';
+                tempDiv.style.padding = '5mm';
+                tempDiv.style.fontFamily = 'Arial, sans-serif';
+                tempDiv.style.fontSize = '11px';
+                tempDiv.style.color = '#333';
+                tempDiv.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <div style="font-size: 18px; font-weight: bold; color: #667eea;">INVOICE</div>
+                        <div style="font-size: 14px; font-weight: bold;">${invoiceData.invoiceNumber}</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; font-size: 10px;">
+                        <div>
+                            <div style="font-weight: bold;">Invoice Date</div>
+                            <div>${invoiceData.invoiceDate}</div>
+                        </div>
+                        <div>
+                            <div style="font-weight: bold;">Due Date</div>
+                            <div>${invoiceData.dueDate}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; font-size: 10px;">
+                        <div>
+                            <div style="font-weight: bold; margin-bottom: 3px;">From:</div>
+                            <div style="font-weight: bold;"><?php echo htmlspecialchars($businessName); ?></div>
+                            <div><?php echo htmlspecialchars($businessEmail); ?></div>
+                            <div><?php echo htmlspecialchars($businessPhone); ?></div>
+                        </div>
+                        <div>
+                            <div style="font-weight: bold; margin-bottom: 3px;">Bill To:</div>
+                            <div style="font-weight: bold;">${invoiceData.customerName}</div>
+                            <div>${invoiceData.customerEmail}</div>
+                            <div>${invoiceData.customerPhone}</div>
+                            <div style="font-size: 9px; margin-top: 2px;">${invoiceData.customerAddress || ''}</div>
+                        </div>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px;">
+                        <thead>
+                            <tr style="background-color: #f5f5f5; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd;">
+                                <th style="text-align: left; padding: 3px; font-weight: bold;">Description</th>
+                                <th style="text-align: center; padding: 3px; font-weight: bold; width: 40px;">Qty</th>
+                                <th style="text-align: right; padding: 3px; font-weight: bold; width: 50px;">Rate</th>
+                                <th style="text-align: right; padding: 3px; font-weight: bold; width: 50px;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${invoiceData.lineItems.map(item => `
+                                <tr style="border-bottom: 1px solid #eee;">
+                                    <td style="padding: 3px;">${item.description}</td>
+                                    <td style="text-align: center; padding: 3px;">${item.quantity}</td>
+                                    <td style="text-align: right; padding: 3px;">₦${parseFloat(item.rate).toFixed(2)}</td>
+                                    <td style="text-align: right; padding: 3px;">₦${(item.quantity * item.rate).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                        <div></div>
+                        <div style="font-size: 10px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; border-top: 1px solid #ddd; padding-top: 3px;">
+                                <div>Subtotal:</div>
+                                <div style="text-align: right;">₦${invoiceData.subtotal.toFixed(2)}</div>
+                                <div>Tax (${invoiceData.taxRate}%):</div>
+                                <div style="text-align: right;">₦${invoiceData.taxAmount.toFixed(2)}</div>
+                                <div>Discount (${invoiceData.discountPercent}%):</div>
+                                <div style="text-align: right;">-₦${((invoiceData.subtotal * invoiceData.discountPercent) / 100).toFixed(2)}</div>
+                                <div style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 3px;">Grand Total:</div>
+                                <div style="text-align: right; font-weight: bold; border-top: 1px solid #ddd; padding-top: 3px;">₦${invoiceData.grandTotal.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 tempDiv.style.display = 'none';
                 document.body.appendChild(tempDiv);
 
@@ -584,47 +798,47 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                 });
 
                 const imgHeight1 = (canvas1.height * A5_WIDTH) / canvas1.width;
-                
+                const imgData1 = canvas1.toDataURL('image/png');
+                const scaledHeight = (A5_WIDTH - PAGE_MARGIN * 2);
+                pdf.addImage(imgData1, 'PNG', PAGE_MARGIN, PAGE_MARGIN, scaledHeight, imgHeight1);
+
+                // Check if second page needed
                 if (imgHeight1 > USABLE_HEIGHT) {
-                    // Content exceeds page, needs continuation
-                    const imgData1 = canvas1.toDataURL('image/png');
-                    const scaledHeight = (A5_WIDTH - PAGE_MARGIN * 2);
-                    pdf.addImage(imgData1, 'PNG', PAGE_MARGIN, PAGE_MARGIN, scaledHeight, imgHeight1);
-                    
-                    // Add second page for payment terms and notes
                     pdf.addPage('a5', 'portrait');
                     
                     const tempDiv2 = document.createElement('div');
+                    tempDiv2.style.padding = '5mm';
+                    tempDiv2.style.fontFamily = 'Arial, sans-serif';
+                    tempDiv2.style.fontSize = '11px';
+                    tempDiv2.style.color = '#333';
+                    tempDiv2.style.width = (A5_WIDTH - PAGE_MARGIN * 2) + 'mm';
                     tempDiv2.innerHTML = `
-                        <div style="font-family: Arial, sans-serif; font-size: 11px; color: #333; padding: 5mm;">
-                            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #667eea;">Invoice Settings & Terms</div>
-                            
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #667eea;">Invoice Settings & Terms</div>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">Invoice Number:</div>
+                            <div>${invoiceData.invoiceNumber}</div>
+                        </div>
+
+                        ${invoiceData.paymentTerms ? `
                             <div style="margin-bottom: 10px;">
-                                <div style="font-weight: bold; margin-bottom: 5px;">Invoice Number:</div>
-                                <div>${invoiceData.invoiceNumber}</div>
+                                <div style="font-weight: bold; margin-bottom: 5px;">Payment Terms:</div>
+                                <div style="font-size: 10px; white-space: pre-wrap;">${invoiceData.paymentTerms}</div>
                             </div>
+                        ` : ''}
 
-                            ${invoiceData.paymentTerms ? `
-                                <div style="margin-bottom: 10px;">
-                                    <div style="font-weight: bold; margin-bottom: 5px;">Payment Terms:</div>
-                                    <div style="font-size: 10px; white-space: pre-wrap;">${invoiceData.paymentTerms}</div>
-                                </div>
-                            ` : ''}
-
-                            ${invoiceData.notes ? `
-                                <div style="margin-bottom: 10px;">
-                                    <div style="font-weight: bold; margin-bottom: 5px;">Additional Notes:</div>
-                                    <div style="font-size: 10px; white-space: pre-wrap;">${invoiceData.notes}</div>
-                                </div>
-                            ` : ''}
-
-                            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #666;">
-                                <div>Generated on: ${new Date().toLocaleDateString()}</div>
-                                <div>Business: <?php echo htmlspecialchars($businessName); ?></div>
+                        ${invoiceData.notes ? `
+                            <div style="margin-bottom: 10px;">
+                                <div style="font-weight: bold; margin-bottom: 5px;">Additional Notes:</div>
+                                <div style="font-size: 10px; white-space: pre-wrap;">${invoiceData.notes}</div>
                             </div>
+                        ` : ''}
+
+                        <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 9px; color: #666;">
+                            <div>Generated on: ${new Date().toLocaleDateString()}</div>
+                            <div>Business: <?php echo htmlspecialchars($businessName); ?></div>
                         </div>
                     `;
-                    tempDiv2.style.width = (A5_WIDTH - PAGE_MARGIN * 2) + 'mm';
                     tempDiv2.style.display = 'none';
                     document.body.appendChild(tempDiv2);
 
@@ -639,11 +853,6 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                     pdf.addImage(imgData2, 'PNG', PAGE_MARGIN, PAGE_MARGIN, scaledHeight2, scaledHeight2);
 
                     document.body.removeChild(tempDiv2);
-                } else {
-                    // Single page, add to PDF
-                    const imgData = canvas1.toDataURL('image/png');
-                    const scaledHeight = (A5_WIDTH - PAGE_MARGIN * 2);
-                    pdf.addImage(imgData, 'PNG', PAGE_MARGIN, PAGE_MARGIN, scaledHeight, imgHeight1);
                 }
 
                 document.body.removeChild(tempDiv);
@@ -661,7 +870,6 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
                 const pdf = await createMultiPagePDF();
                 if (!pdf) return;
 
-                // Display in modal
                 const pdfBlob = pdf.output('blob');
                 const pdfUrl = window.URL.createObjectURL(pdfBlob);
                 const pdfContainer = document.getElementById('pdfContainer');
@@ -700,8 +908,6 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
             event.preventDefault();
             
             const action = event.submitter.value;
-            const formData = new FormData(document.getElementById('invoiceForm'));
-            formData.append('action', action);
 
             // Gather line items
             const lineItems = [];
@@ -763,9 +969,8 @@ $dueDate = date('Y-m-d', strtotime('+30 days'));
             });
         }
 
-        // Add event listeners to all inputs
-        document.getElementById('invoiceForm').addEventListener('input', updatePreview);
-        document.getElementById('invoiceForm').addEventListener('change', updatePreview);
+        // Initialize preview on page load
+        window.addEventListener('load', updatePreview);
     </script>
 </body>
 </html>
